@@ -12,41 +12,40 @@ from transformers import T5EncoderModel, T5Tokenizer
 import re
 import gc
 
-##测试集验证集划分
-def tv_split(train_list,seed):
-    random.seed(seed)
-    random.shuffle(train_list)
-    valid_list = train_list[:int(len(train_list)*0.2)]
-    train_list = train_list[int(len(train_list)*0.2):]
-    return train_list,valid_list
+def read_fasta():
+    seqdict = {}
+    train_list = []
+    train_seq = []
+    test_list = []
+    test_seq = []
+    with open('./Datasets/RNA-495_Train.txt', 'r') as f:
+        train_text = f.readlines()
+    for i in range(0, len(train_text), 4):
+        id = train_text[i].strip()[1:]
+        if id[-1].islower():
+            id += id[-1]
+        pro_seq = train_text[i + 1].strip()
+        pro_anno = train_text[i + 2].strip()
+        train_list.append(id)
+        seqdict[id] = {'seq': pro_seq, 'anno': pro_anno}
+    for name in train_list:
+        train_seq.append(seqdict[name]['seq'])
 
-##输出数据集表格
-def StatisticsSampleNum(train_list,test_list,seqanno):
-    def sub(seqlist,seqanno):
-        pos_num_all = 0
-        res_num_all = 0
-        for seqid in seqlist:
-            anno = list(map(int,list(seqanno[seqid]['anno'])))
-            pos_num = sum(anno)
-            res_num = len(anno)
-            pos_num_all += pos_num
-            res_num_all += res_num
-        neg_num_all = res_num_all - pos_num_all
-        pnratio = pos_num_all/float(neg_num_all)
-        return len(seqlist), res_num_all, pos_num_all,neg_num_all,pnratio
+    with open('./Datasets/RNA-117_Test.txt', 'r') as f:
+        test_text = f.readlines()
+    for i in range(0, len(test_text), 3):
+        id = test_text[i].strip()[1:]
+        if id[-1].islower():
+            id += id[-1]
+        pro_seq = test_text[i + 1].strip()
+        pro_ann = test_text[i + 2].strip()
+        test_list.append(id)
+        seqdict[id] = {'seq': pro_seq, 'anno': pro_ann}
+    for name in test_list:
+        test_seq.append(seqdict[name]['seq'])
+    return train_seq , test_seq
 
-    tb = pt.PrettyTable()
-    tb.field_names = ['Dataset','NumSeq', 'NumRes', 'NumPos', 'NumNeg', 'PNratio']
-    tb.float_format = '0.3'
-    seq_num, res_num, pos_num, neg_num, pnratio = sub(train_list,seqanno)
-    tb.add_row(['train',seq_num, res_num, pos_num, neg_num, pnratio])
-    seq_num, res_num, pos_num, neg_num, pnratio = sub(test_list,seqanno)
-    tb.add_row(['test',seq_num, res_num, pos_num, neg_num, pnratio])
-    print(tb)
-    return
-
-##T5嵌入
-def T5embedding(seq_list):
+def Generalization_embedding(seq_list):
     tokenizer = T5Tokenizer.from_pretrained("Rostlab/prot_t5_xl_bfd", do_lower_case=False )
     model = T5EncoderModel.from_pretrained("Rostlab/prot_t5_xl_bfd")
     gc.collect()
@@ -74,78 +73,18 @@ def T5embedding(seq_list):
             seq_emd = embedding[seq_num][:seq_len-1]
             count+=1
             features.append(seq_emd)
-    print('第一条蛋白质残基个数', len(seq_list[0]))
-    print('序列条数',len(features))
-    print('第一条蛋白质嵌入维度',features[0].shape)
     vec_train = []
     for i in range(len(features)):
         for j in range(features[i].shape[0]):
             vec_train.append(features[i][j][:])
     vec_train = np.array(vec_train)
-    print('train嵌入结果',vec_train.shape)
     return vec_train
 
-##读取训练集
-trans_anno = False
-seqanno = {}
-train_list = []
-test_list = []
-with open('/home/zhangbin/DNA/Datasets/Datasets/DNA-573_Train.txt', 'r') as f:
-    train_text = f.readlines()
-if trans_anno:
-    for i in range(0 ,len(train_text) , 4):
-        pro_id = train_text[i].strip()[1:]
-        if pro_id[-1].islower():
-            pro_id += pro_id[-1]
-        pro_seq = train_text[i +1].strip()
-        pro_anno = train_text[i +2].strip()
-        train_list.append(pro_id)
-        seqanno[pro_id] = {'seq' :pro_seq ,'anno' :pro_anno}
-
-else:
-    for i in range(0 ,len(train_text) ,4):
-        pro_id = train_text[i].strip()[1:]
-        if pro_id[-1].islower():
-            pro_id += pro_id[-1]
-        pro_seq = train_text[i + 1].strip()
-        pro_anno = train_text[i + 3].strip()
-        train_list.append(pro_id)
-        seqanno[pro_id] = {'seq' :pro_seq ,'anno' :pro_anno}
 
 
-##读取测试集
-with open('/home/zhangbin/DNA/Datasets/Datasets/DNA-129_Test.txt', 'r') as f:
-    test_text = f.readlines()
-for i in range(0, len(test_text), 3):
-    pro_id = test_text[i].strip()[1:]
-    if pro_id[-1].islower():
-        pro_id += pro_id[-1]
-    pro_seq = test_text[i + 1].strip()
-    pro_ann = test_text[i + 2].strip()
-    test_list.append(pro_id)
-    seqanno[pro_id] = {'seq': pro_seq, 'anno': pro_ann}
+train_seq, test_seq = read_fasta()
+train_vec = Generalization_embedding(train_seq)
+test_vec = Generalization_embedding_embedding(test_seq)
 
-
-##划分
-train_seq = []
-train_label = []
-
-test_seq = []
-test_label = []
-for name in train_list:
-    train_seq.append(seqanno[name]['seq'])
-    train_label.append(seqanno[name]['anno'])
-
-for name in test_list:
-    test_seq.append(seqanno[name]['seq'])
-    test_label.append(seqanno[name]['anno'])
-
-#T5生成向量
-train_vec = T5embedding(train_seq)
-test_vec = T5embedding(test_seq)
-np.save('/home/zhangbin/DNA/data_vec/t5-bfd-train_vec', train_vec)
-np.save('/home/zhangbin/DNA/data_vec/t5-bfd-test_vec', test_vec) ##data_label
-
-##train and test
-StatisticsSampleNum(train_list,test_list,seqanno)
-
+np.save('./data_vec/RNA/RNA_gene_train.npy', train_vec)
+np.save('./data_vec/RNA/RNA_gene_test.npy', test_vec)

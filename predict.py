@@ -11,19 +11,21 @@ random.seed(2022)
 warnings.filterwarnings("ignore")
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
-train_gen = np.load('/home/zhangbin/DNA/data_vec/train_vec.npy').reshape(-1,1,1024)
+train_gen = np.load('./data_vec/RNA/RNA_gene_train.npy').reshape(-1,1,1024)
 # train_bio_vec = np.load('/home/zhangbin/DNA/data_vec/train_bio_vec.npy').reshape(-1,1,50)
-train_bio_vec = np.load('/home/zhangbin/DNA/data_vec/train_75.npy').reshape(-1,1,75)
+train_bio_vec = np.load('./data_vec/RNA/RNA_bio_train.npy').reshape(-1,1,75)
 # train_bio_vec = np.load('/home/zhangbin/DNA/data_vec/train_bio_PSSM_vec.npy').reshape(-1,1,20)
-train_dyna = np.load('/home/zhangbin/DNA/data_vec/finetune/train_926.npy').reshape(-1,1,1024)
-train_label = np.array(label_one_hot(np.load('/home/zhangbin/DNA/data_label/train_label.npy')))
+train_dyna = np.load('./data_vec/RNA/RNA_dyna_train.npy').reshape(-1,1,1024)
+train_label = np.array(label_one_hot(np.load('./multi-feature/RNA/label/train_label.npy')))
 
-test_gen = np.load('/home/zhangbin/DNA/data_vec/test_vec.npy').reshape(-1,1,1024)
+test_gen = np.load('./data_vec/RNA/RNA_gene_test.npy').reshape(-1,1,1024)
 # tese_bio_vec = np.load('/home/zhangbin/DNA/data_vec/test_bio_vec.npy').reshape(-1,1,50)
-tese_bio_vec = np.load('/home/zhangbin/DNA/data_vec/test_75.npy').reshape(-1,1,75)
+tese_bio_vec = np.load('./data_vec/RNA/RNA_bio_test.npy').reshape(-1,1,75)
 # tese_bio_vec = np.load('/home/zhangbin/DNA/data_vec/test_bio_PSSM_vec.npy').reshape(-1,1,20)
-test_dyna = np.load('/home/zhangbin/DNA/data_vec/finetune/test_926.npy').reshape(-1,1,1024)
-test_label = np.array(label_one_hot(np.load('/home/zhangbin/DNA/data_label/test_label.npy')))
+test_dyna = np.load('./data_vec/RNA/RNA_dyna_test.npy').reshape(-1,1,1024)
+test_label = np.array(label_one_hot(np.load('./multi-feature/RNA/label/test_label.npy')))
+
+
 
 def step_decay(epoch):
     initial_lrate = 0.0005
@@ -70,7 +72,7 @@ for i in range(len(sub_list_gen)):
               verbose=1,
               validation_data=([val_X_xl, val_X_bio,val_X_dyna], val_y),
               shuffle=True)
-    # model.save('/home/zhangbin/DNA/train_model/DNA_'+str(i)+'.h5')
+    # model.save('./train_model/DNA_'+str(i)+'.h5')
 
     predict_result1 = label_sum(predict_result, model.predict([test_gen, tese_bio_vec, test_dyna]))
 

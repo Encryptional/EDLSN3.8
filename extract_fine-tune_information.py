@@ -11,42 +11,42 @@ import gc
 
 
 def read_fasta():
-    seqanno = {}
+    seqdict = {}
     train_list = []
     train_seq = []
     test_list = []
     test_seq = []
-    with open('/home/zhangbin/RNA/Datasets/Datasets/RNA-495_Train.txt', 'r') as f:
+    with open('./Datasets/RNA-495_Train.txt', 'r') as f:
         train_text = f.readlines()
     for i in range(0, len(train_text), 4):
-        pro_id = train_text[i].strip()[1:]
-        if pro_id[-1].islower():
-            pro_id += pro_id[-1]
+        id = train_text[i].strip()[1:]
+        if id[-1].islower():
+            id += id[-1]
         pro_seq = train_text[i + 1].strip()
         pro_anno = train_text[i + 2].strip()
-        train_list.append(pro_id)
-        seqanno[pro_id] = {'seq': pro_seq, 'anno': pro_anno}
+        train_list.append(id)
+        seqdict[id] = {'seq': pro_seq, 'anno': pro_anno}
     for name in train_list:
-        train_seq.append(seqanno[name]['seq'])
+        train_seq.append(seqdict[name]['seq'])
 
-    with open('/home/zhangbin/RNA/Datasets/Datasets/RNA-117_Test.txt', 'r') as f:
+    with open('./Datasets/RNA-117_Test.txt', 'r') as f:
         test_text = f.readlines()
     for i in range(0, len(test_text), 3):
-        pro_id = test_text[i].strip()[1:]
-        if pro_id[-1].islower():
-            pro_id += pro_id[-1]
+        id = test_text[i].strip()[1:]
+        if id[-1].islower():
+            id += id[-1]
         pro_seq = test_text[i + 1].strip()
         pro_ann = test_text[i + 2].strip()
-        test_list.append(pro_id)
-        seqanno[pro_id] = {'seq': pro_seq, 'anno': pro_ann}
+        test_list.append(id)
+        seqdict[id] = {'seq': pro_seq, 'anno': pro_ann}
     for name in test_list:
-        test_seq.append(seqanno[name]['seq'])
+        test_seq.append(seqdict[name]['seq'])
     return train_seq , test_seq
 
-def GB_Bert(sequences):
+def get_dynamic_embdedding(sequences):
 
-    tokenizer = BertTokenizer.from_pretrained("/home/zhangbin/RNA/without_structure/prot_bfd_ft", do_lower_case=False)
-    model = BertModel.from_pretrained("/home/zhangbin/RNA/without_structure/prot_bfd_ft")
+    tokenizer = BertTokenizer.from_pretrained("./fine-tuned_model", do_lower_case=False)
+    model = BertModel.from_pretrained("./fine-tuned_model")
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
     model = model.to(device)
     model = model.eval()
@@ -74,15 +74,13 @@ def GB_Bert(sequences):
         for j in range(features[i].shape[0]):
             vec_train.append(features[i][j][:])
     vec_train = np.array(vec_train)
-    print('train嵌入结果', vec_train.shape)
     return vec_train
 
 
 sequences1, sequences2 = read_fasta()
-Features1 = GB_Bert(sequences1)
-Features2 = GB_Bert(sequences2)
-print(np.array(Features1).shape)
-print(np.array(Features2).shape)
-np.save('/home/zhangbin/RNA/data_vec/finetune/train_9266.npy',np.array(Features1))
-np.save('/home/zhangbin/RNA/data_vec/finetune/test_9266.npy',np.array(Features2))
+Features1 = get_dynamic_embdedding(sequences1)
+Features2 = get_dynamic_embdedding(sequences2)
+
+np.save('./data_vec/RNA/RNA_dyna_train.npy',np.array(Features1))
+np.save('./data_vec/RNA/RNA_dyna_test.npy',np.array(Features2))
 
